@@ -437,6 +437,7 @@
                     <div class="settings-section-header">
                         <h4 id="settingsSoundTitle">Son</h4>
                         <div class="settings-sound-actions">
+                            <p id="audioPreviewStatus" class="settings-preview-status" role="status" aria-live="polite"></p>
                             <button id="audioSettingToggle" type="button" class="settings-sound-toggle" onclick="toggleAudio()" aria-pressed="true">
                                 <i id="audioSettingIcon" class="fa-solid fa-volume-high" aria-hidden="true"></i>
                                 <span id="audioSettingState">Activé</span>
@@ -450,7 +451,6 @@
                         <span>Volume des effets</span><output id="audioVolumeValue" for="audioVolume">55%</output>
                     </label>
                     <input id="audioVolume" class="settings-volume-range" type="range" min="0" max="100" step="1" value="55" oninput="setAudioVolume(this.value)">
-                    <p id="audioPreviewStatus" class="settings-preview-status" role="status" aria-live="polite"></p>
                 </section>
 
                 <section class="settings-section cyber-panel" aria-labelledby="settingsControlsTitle">
@@ -575,11 +575,11 @@
                             </div>
                         </div>
                         <div class="settings-reset-row">
+                            <p id="settingsKeyStatus" class="settings-key-status" role="status" aria-live="polite"></p>
+                            <p id="settingsMouseStatus" class="settings-key-status" role="status" aria-live="polite"></p>
                             <button type="button" class="settings-bind-button settings-reset-button" onclick="resetUserSettings()">Rétablir les valeurs par défaut</button>
                         </div>
                     </div>
-                    <p id="settingsKeyStatus" class="settings-key-status" role="status" aria-live="polite"></p>
-                    <p id="settingsMouseStatus" class="settings-key-status" role="status" aria-live="polite"></p>
                 </section>
             </div>
         </div>

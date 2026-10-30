@@ -483,30 +483,30 @@
                     osc.type = 'triangle';
                     osc.frequency.setValueAtTime(400, now);
                     osc.frequency.exponentialRampToValueAtTime(200, now + 0.05);
-                    gain.gain.setValueAtTime(0.1 * audioVolume, now);
-                    gain.gain.linearRampToValueAtTime(0.01 * audioVolume, now + 0.05);
+                    gain.gain.setValueAtTime(0.08 * audioVolume, now);
+                    gain.gain.linearRampToValueAtTime(0.005 * audioVolume, now + 0.05);
                     osc.start(now); osc.stop(now + 0.05);
                 } else if (type === 'flag') {
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(300, now);
                     osc.frequency.exponentialRampToValueAtTime(600, now + 0.08);
-                    gain.gain.setValueAtTime(0.12 * audioVolume, now);
-                    gain.gain.linearRampToValueAtTime(0.01 * audioVolume, now + 0.08);
+                    gain.gain.setValueAtTime(0.08 * audioVolume, now);
+                    gain.gain.linearRampToValueAtTime(0.005 * audioVolume, now + 0.08);
                     osc.start(now); osc.stop(now + 0.08);
                 } else if (type === 'explode') {
-                    osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(150, now);
-                    osc.frequency.exponentialRampToValueAtTime(30, now + 0.45);
-                    gain.gain.setValueAtTime(0.35 * audioVolume, now);
-                    gain.gain.linearRampToValueAtTime(0.01 * audioVolume, now + 0.45);
-                    osc.start(now); osc.stop(now + 0.45);
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(110, now);
+                    osc.frequency.exponentialRampToValueAtTime(45, now + 0.35);
+                    gain.gain.setValueAtTime(0.08 * audioVolume, now);
+                    gain.gain.linearRampToValueAtTime(0.001 * audioVolume, now + 0.35);
+                    osc.start(now); osc.stop(now + 0.35);
                 } else if (type === 'win') {
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(523, now);
                     osc.frequency.setValueAtTime(659, now + 0.08);
                     osc.frequency.setValueAtTime(783, now + 0.16);
-                    gain.gain.setValueAtTime(0.2 * audioVolume, now);
-                    gain.gain.linearRampToValueAtTime(0.01 * audioVolume, now + 0.3);
+                    gain.gain.setValueAtTime(0.12 * audioVolume, now);
+                    gain.gain.linearRampToValueAtTime(0.005 * audioVolume, now + 0.3);
                     osc.start(now); osc.stop(now + 0.3);
                 }
             } catch(e) {}
@@ -1736,9 +1736,11 @@
                 emblem.style.setProperty('--rank-ink', badge.ink);
                 const icon = emblem.querySelector('.rank-transition-logo i');
                 icon.className = `fa-solid ${badge.icon}`;
+                return badge;
             };
-            setRankBadge(currentEmblem, rankChange.previous);
-            setRankBadge(nextEmblem, rankChange.next);
+            const currentBadge = setRankBadge(currentEmblem, rankChange.previous);
+            const nextBadge = setRankBadge(nextEmblem, rankChange.next);
+            transition.style.setProperty('--rank-transition-accent', `rgb(${currentBadge.glow})`);
             transition.classList.remove('is-active', 'is-leaving', 'is-arriving', 'is-exiting');
             currentEmblem.classList.remove('is-leaving');
             nextEmblem.classList.remove('is-arriving');
@@ -1771,14 +1773,16 @@
             };
 
             if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+                transition.style.setProperty('--rank-transition-accent', `rgb(${nextBadge.glow})`);
                 transition.classList.add('is-arriving');
                 nextEmblem.classList.add('is-arriving');
                 schedule(850, finish);
                 return;
             }
 
-            schedule(420, () => currentEmblem.classList.add('is-leaving'));
-            schedule(850, () => {
+            schedule(420, () => {
+                currentEmblem.classList.add('is-leaving');
+                transition.style.setProperty('--rank-transition-accent', `rgb(${nextBadge.glow})`);
                 transition.classList.add('is-arriving');
                 nextEmblem.classList.add('is-arriving');
             });
