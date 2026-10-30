@@ -1,0 +1,676 @@
+﻿<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>BAIELY MINES — Démineur</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        neon: {
+                            cyan: '#00f3ff', purple: '#b000ff', gold: '#ffd700',
+                            rose: '#ff0055', matrix: '#00ff66', magma: '#ff4500'
+                        }
+                    },
+                    keyframes: {
+                        menuSlideIn: { '0%': { opacity: '0', transform: 'translateX(-30px) scale(0.98)' }, '100%': { opacity: '1', transform: 'translateX(0) scale(1)' } },
+                        popIn: { '0%': { opacity: '0', transform: 'scale(0.92) translateY(12px)' }, '100%': { opacity: '1', transform: 'scale(1) translateY(0)' } },
+                        pulseGlow: { '0%, 100%': { opacity: '0.4', filter: 'drop-shadow(0 0 15px rgba(0, 243, 255, 0.4))' }, '50%': { opacity: '0.9', filter: 'drop-shadow(0 0 25px rgba(0, 243, 255, 0.8))' } }
+                    },
+                    animation: { 'menu-slide': 'menuSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards', 'pop-in': 'popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards', 'pulse-glow': 'pulseGlow 3s infinite ease-in-out' }
+                }
+            }
+        }
+    </script>
+    <!-- Icons & AAA Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="baiely_demineur.css">
+</head>
+<body class="app-body relative flex flex-col">
+
+    <div class="ambient-scene" aria-hidden="true">
+        <span class="ambient-orb ambient-orb--one"></span>
+        <span class="ambient-orb ambient-orb--two"></span>
+        <span class="ambient-orb ambient-orb--three"></span>
+        <span class="ambient-ring ambient-ring--one"></span>
+        <span class="ambient-ring ambient-ring--two"></span>
+    </div>
+    <div id="themeBackgroundTransition" class="theme-background-transition hidden" aria-hidden="true"></div>
+    <div id="winCelebration" class="win-celebration" aria-hidden="true"></div>
+    <div id="rankTransition" class="rank-transition hidden" role="status" aria-live="polite" tabindex="-1">
+        <article id="rankTransitionCurrent" class="rank-transition-emblem rank-transition-emblem--current">
+            <span class="rank-transition-kicker">RANG VALIDÉ</span>
+            <span class="rank-transition-logo"><i class="fa-solid fa-ranking-star" aria-hidden="true"></i></span>
+            <strong id="rankTransitionCurrentName"></strong>
+            <span id="rankTransitionCurrentTier" class="rank-transition-tier"></span>
+        </article>
+        <article id="rankTransitionNext" class="rank-transition-emblem rank-transition-emblem--next">
+            <span class="rank-transition-kicker">NOUVEAU RANG</span>
+            <span class="rank-transition-logo"><i class="fa-solid fa-ranking-star" aria-hidden="true"></i></span>
+            <strong id="rankTransitionNextName"></strong>
+            <span id="rankTransitionNextTier" class="rank-transition-tier"></span>
+        </article>
+    </div>
+
+    <!-- Header Navigation & Status Bar -->
+    <header id="appHeader" class="w-full max-w-7xl mx-auto z-10 flex items-center justify-between pb-4 border-b border-slate-800/80">
+        <button type="button" class="app-logo flex items-center gap-4" onclick="handleLogoClick()" aria-label="Retour au menu principal">
+            <div class="theme-mark w-12 h-12 rounded-xl cyber-panel flex items-center justify-center text-cyan-400 text-2xl">
+                <i class="fa-solid fa-bomb" aria-hidden="true"></i>
+            </div>
+            <div>
+                <h1 class="font-orbitron font-black text-2xl sm:text-3xl tracking-wider bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-500 bg-clip-text text-transparent">
+                    BAIELY MINES
+                </h1>
+            </div>
+        </button>
+
+        <div class="flex items-center gap-3">
+            <div id="playerBadge" class="hidden cyber-panel px-4 py-2 rounded-xl flex items-center gap-3 text-xs font-bold text-slate-200">
+                <span id="displayUsername" class="text-cyan-400 font-extrabold uppercase tracking-wider"></span>
+                <span id="displayRank" class="text-amber-400 font-orbitron"></span>
+            </div>
+
+            <button type="button" onclick="openShop()" class="header-icon-button cyber-panel" title="Personnaliser l’apparence" aria-label="Personnaliser l’apparence du site">
+                <i class="fa-solid fa-palette"></i>
+            </button>
+            <button type="button" onclick="openStatsPage()" class="header-icon-button cyber-panel" title="Statistiques" aria-label="Ouvrir les statistiques">
+                <i class="fa-solid fa-chart-pie"></i>
+            </button>
+            <button type="button" onclick="openSettingsPage()" class="header-icon-button cyber-panel" title="Paramètres" aria-label="Ouvrir les paramètres">
+                <i class="fa-solid fa-gear" aria-hidden="true"></i>
+            </button>
+            <button id="logoutHeaderButton" type="button" onclick="openModal('logoutModal')" class="header-icon-button cyber-panel hidden" title="Déconnexion" aria-label="Se déconnecter">
+                <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Dynamic Area -->
+    <main class="w-full max-w-7xl mx-auto z-10 flex-1 flex items-center justify-center py-6 relative">
+
+        <!-- 1. LOGIN SCREEN -->
+        <div id="screenUsername" class="w-full max-w-md cyber-panel p-8 rounded-2xl flex flex-col items-center text-center animate-pop-in">
+            <div class="w-20 h-20 rounded-2xl bg-cyan-500/10 border border-cyan-500/40 flex items-center justify-center text-cyan-400 text-4xl mb-6 shadow-lg shadow-cyan-500/10">
+                <i class="fa-solid fa-sparkles"></i>
+            </div>
+            <h2 class="font-orbitron font-black text-2xl text-white mb-2 tracking-wider">Bienvenue sur Baiely Mines</h2>
+            <p class="text-xs text-slate-400 mb-8 font-medium">Ton profil est enregistré sur cet appareil. Choisis un pseudo pour jouer.</p>
+            
+            <form id="usernameForm" class="w-full flex flex-col gap-4">
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-cyan-400">
+                        <i class="fa-solid fa-user-ninja"></i>
+                    </span>
+                    <label for="usernameInput" class="sr-only">Votre pseudo</label>
+                    <input autocomplete="nickname" autofocus type="text" id="usernameInput" placeholder="Ex: BAIELY" maxlength="16" required
+                        class="w-full pl-12 pr-4 py-3.5 rounded-xl bg-slate-950/80 border border-slate-700 text-white font-orbitron text-sm focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/20 transition">
+                </div>
+                <button type="submit" onmouseenter="playHoverSound()" class="w-full py-4 rounded-xl bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-orbitron font-extrabold text-sm tracking-wider shadow-lg shadow-cyan-500/25 transition transform active:scale-95">
+                    Continuer <i class="fa-solid fa-arrow-right ml-2"></i>
+                </button>
+            </form>
+        </div>
+
+        <!-- Menu principal -->
+        <div id="screenMenu" class="hidden w-full flex flex-col lg:flex-row items-center justify-between gap-12 animate-menu-slide px-4">
+            
+            <!-- AAA Left Column Menu Stack -->
+            <div class="w-full lg:w-96 flex flex-col gap-4">
+                <div>
+                    <h2 class="font-orbitron font-black text-4xl text-white tracking-tight">MENU PRINCIPAL</h2>
+                </div>
+
+                <div id="menuModeList" class="flex flex-col gap-3">
+                    <div id="menuModePair">
+                    <button id="classicModeButton" onclick="startGameMode('classic')" onmouseenter="playHoverSound()" class="aaa-menu-btn p-4 rounded-xl flex items-center justify-between group">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-lg group-hover:scale-110 transition">
+                                <i class="fa-solid fa-shield-halved"></i>
+                            </div>
+                            <div class="text-left">
+                                <h3 class="font-orbitron font-bold text-base text-white group-hover:text-cyan-300">MODE CLASSIQUE</h3>
+                                <p class="text-[11px] text-slate-400">Quatre difficultés</p>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-slate-600 group-hover:text-cyan-400 group-hover:translate-x-1 transition"></i>
+                    </button>
+                    <button id="rankedMatchButton" onclick="startRankedMatch()" onmouseenter="playHoverSound()" class="aaa-menu-btn p-4 rounded-xl flex items-center justify-between group">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-lg group-hover:scale-110 transition">
+                                <i class="fa-solid fa-ranking-star"></i>
+                            </div>
+                            <div class="text-left">
+                                <h3 class="font-orbitron font-bold text-base text-amber-300 group-hover:text-amber-200">MODE CLASSÉ</h3>
+                                <p id="rankedMenuDesc" class="text-[11px] text-slate-400">21 paliers · Temps cible</p>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-slate-600 group-hover:text-amber-400 group-hover:translate-x-1 transition"></i>
+                    </button>
+                    </div>
+
+                    <button id="dailyChallengeButton" onclick="startDailyChallenge()" onmouseenter="playHoverSound()" class="aaa-menu-btn p-4 rounded-xl flex items-center justify-between group">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-lg group-hover:scale-110 transition">
+                                <i class="fa-solid fa-calendar-day"></i>
+                            </div>
+                            <div class="text-left">
+                                <h3 class="font-orbitron font-bold text-base text-amber-300 group-hover:text-amber-200">DÉFI DU JOUR</h3>
+                                <p class="text-[11px] text-slate-400">Même grille pour tous</p>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-slate-600 group-hover:text-amber-400 group-hover:translate-x-1 transition"></i>
+                    </button>
+
+                    <button id="themeShopButton" type="button" onclick="openShop()" class="aaa-menu-btn p-4 rounded-xl flex items-center justify-between group">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 text-lg group-hover:scale-110 transition">
+                                <i class="fa-solid fa-palette"></i>
+                            </div>
+                            <div class="text-left">
+                                <h3 class="font-orbitron font-bold text-base text-purple-300 group-hover:text-purple-200">THÈME DU SITE</h3>
+                                <p class="text-[11px] text-slate-400">Choisis tes couleurs</p>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-slate-600 group-hover:text-purple-400 group-hover:translate-x-1 transition"></i>
+                    </button>
+
+                    <button id="menuSettingsButton" type="button" onclick="openSettingsPage()" class="aaa-menu-btn p-4 rounded-xl flex items-center justify-between group">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-lg group-hover:scale-110 transition">
+                                <i class="fa-solid fa-gear" aria-hidden="true"></i>
+                            </div>
+                            <div class="text-left">
+                                <h3 class="font-orbitron font-bold text-base text-cyan-300 group-hover:text-cyan-200">PARAMÈTRES</h3>
+                                <p class="text-[11px] text-slate-400">Audio, commandes et préférences</p>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-slate-600 group-hover:text-cyan-400 group-hover:translate-x-1 transition" aria-hidden="true"></i>
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- Future leaderboard panel -->
+            <section id="leaderboardPanel" class="hidden lg:flex flex-1 max-w-lg cyber-panel p-7 rounded-2xl flex-col border-l-4 border-l-cyan-400 relative overflow-hidden min-h-[420px]" aria-labelledby="leaderboardTitle">
+                <div class="absolute -right-12 -top-12 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="relative z-10 flex items-center justify-between gap-3 mb-5">
+                    <span class="px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-[10px] font-bold text-cyan-400">30 × 16</span>
+                </div>
+                <h3 id="leaderboardTitle" class="relative z-10 font-orbitron font-black text-3xl text-white mb-2">MEILLEURS DÉMINEURS</h3>
+
+                <div class="relative z-10 flex-1 flex flex-col justify-center gap-3" aria-live="polite">
+                    <div class="cyber-panel p-4 rounded-xl flex items-center gap-4 border border-cyan-500/20">
+                        <span class="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-400"><i class="fa-solid fa-trophy"></i></span>
+                        <div><strong class="block text-sm text-white">Classement bientôt disponible</strong></div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 opacity-60" aria-hidden="true">
+                        <div class="cyber-panel p-3 rounded-xl text-center"><span class="block text-[10px] text-slate-500 font-bold">01</span><i class="fa-solid fa-lock text-cyan-400 text-xs mt-2"></i></div>
+                        <div class="cyber-panel p-3 rounded-xl text-center"><span class="block text-[10px] text-slate-500 font-bold">02</span><i class="fa-solid fa-lock text-cyan-400 text-xs mt-2"></i></div>
+                        <div class="cyber-panel p-3 rounded-xl text-center"><span class="block text-[10px] text-slate-500 font-bold">03</span><i class="fa-solid fa-lock text-cyan-400 text-xs mt-2"></i></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- 3. GAME PLAY ARENA -->
+        <div id="screenGame" class="hidden relative w-full flex flex-col items-center animate-pop-in">
+
+            <!-- Game HUD -->
+            <div id="gameHud" class="w-full max-w-3xl cyber-panel p-4 rounded-2xl mb-4 flex items-center justify-between gap-4 shadow-2xl">
+                <div class="flex items-center gap-3">
+                    <button type="button" onclick="returnToMenu()" onmouseenter="playHoverSound()" class="w-10 h-10 rounded-xl bg-slate-900/80 border border-slate-700 flex items-center justify-center text-slate-300 hover:text-white transition hover:border-cyan-400" title="Retour au menu" aria-label="Retour au menu">
+                        <i class="fa-solid fa-house" aria-hidden="true"></i>
+                    </button>
+                    <div>
+                        <span id="gameModeTitle" class="text-[10px] font-orbitron font-bold text-cyan-400 uppercase tracking-widest">Mode Classique</span>
+                        <div class="flex items-center gap-2 min-w-0">
+                            <div id="gameRankInfo" class="text-xs font-bold text-white">Grille Standard</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-6">
+                    <div class="flex items-center gap-2 bg-slate-950/80 px-4 py-2 rounded-xl border border-slate-800">
+                        <i class="fa-solid fa-bomb text-rose-500 text-sm"></i>
+                        <span id="minesCountDisplay" class="font-orbitron font-extrabold text-lg text-rose-400" aria-label="Mines restantes" aria-live="polite" aria-atomic="true">00</span>
+                    </div>
+
+                    <div class="flex items-center gap-2 bg-slate-950/80 px-4 py-2 rounded-xl border border-slate-800">
+                        <i class="fa-solid fa-stopwatch text-cyan-400 text-sm"></i>
+                        <span id="timerDisplay" class="font-orbitron font-extrabold text-lg text-cyan-300" aria-label="Temps écoulé en secondes">000</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button id="logicalModeToggle" type="button" onclick="toggleLogicalMode()" onmouseenter="playHoverSound()" aria-pressed="false" class="w-10 h-10 rounded-xl bg-slate-900/80 border border-slate-700 flex items-center justify-center text-slate-300 hover:text-cyan-400 transition" title="Activer le mode logique" aria-label="Activer le mode logique"><i class="fa-solid fa-brain" aria-hidden="true"></i></button>
+                    <button id="changeClassicGridButton" type="button" onclick="showClassicGridSelection()" onmouseenter="playHoverSound()" class="hidden" title="Changer de grille" aria-label="Changer de grille"><i class="fa-solid fa-table-cells-large" aria-hidden="true"></i></button>
+                    <button id="helpButton" type="button" onclick="openModal('helpModal')" class="w-10 h-10 rounded-xl bg-slate-900/80 border border-slate-700 flex items-center justify-center text-slate-300 hover:text-cyan-400 transition" title="Règles et commandes" aria-label="Règles et commandes">
+                        <i class="fa-solid fa-circle-question" aria-hidden="true"></i>
+                    </button>
+                    <button id="flagModeBtn" type="button" onclick="toggleFlagMode()" onmouseenter="playHoverSound()" title="Activer le mode drapeau" aria-label="Activer le mode drapeau" aria-pressed="false" class="w-10 h-10 rounded-xl bg-slate-900/80 flex items-center justify-center border border-slate-700 transition">
+                        <i class="fa-solid fa-flag text-slate-400"></i>
+                    </button>
+                    <button type="button" onclick="restartGame()" onmouseenter="playHoverSound()" class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/40 flex items-center justify-center text-cyan-400 hover:bg-cyan-500/20 transition" title="Recommencer" aria-label="Recommencer la partie">
+                        <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <button id="lossRestartButton" type="button" onclick="restartGame()" class="loss-restart-button hidden">
+                    <span class="loss-action-main">
+                        <span class="loss-action-icon"><i class="fa-solid fa-rotate-right"></i></span>
+                        <span class="loss-action-copy">
+                            <small id="lossCause">Partie terminée</small>
+                            <strong id="lossActionLabel">RECOMMENCER LA PARTIE</strong>
+                        </span>
+                    </span>
+                    <span id="lossFinalTime" class="loss-final-time">0 s</span>
+                </button>
+            </div>
+
+            <section id="classicGridSelection" class="cyber-panel w-full max-w-2xl p-5 rounded-2xl flex flex-col gap-4" aria-label="Choix de la grille classique">
+                <div id="classicGridChoices" class="grid grid-cols-2 gap-3">
+                    <button type="button" data-classic-difficulty="easy" onclick="selectClassicDifficulty('easy')" onmouseenter="playHoverSound()" class="aaa-menu-btn classic-grid-choice" aria-pressed="false">
+                        <span class="classic-grid-choice-icon" aria-hidden="true"><i class="fa-solid fa-seedling"></i></span>
+                        <span class="classic-grid-choice-name">Facile</span><span class="classic-grid-choice-details">9×9 · 10 mines</span>
+                    </button>
+                    <button type="button" data-classic-difficulty="logic" onclick="selectClassicDifficulty('logic')" onmouseenter="playHoverSound()" class="aaa-menu-btn classic-grid-choice" aria-pressed="false">
+                        <span class="classic-grid-choice-icon" aria-hidden="true"><i class="fa-solid fa-bolt"></i></span>
+                        <span class="classic-grid-choice-name">Intermédiaire</span><span class="classic-grid-choice-details">12×10 · 15 mines</span>
+                    </button>
+                    <button type="button" data-classic-difficulty="standard" onclick="selectClassicDifficulty('standard')" onmouseenter="playHoverSound()" class="aaa-menu-btn classic-grid-choice" aria-pressed="false">
+                        <span class="classic-grid-choice-icon" aria-hidden="true"><i class="fa-solid fa-crosshairs"></i></span>
+                        <span class="classic-grid-choice-name">Standard</span><span class="classic-grid-choice-details">16×16 · 40 mines</span>
+                    </button>
+                    <button type="button" data-classic-difficulty="expert" onclick="selectClassicDifficulty('expert')" onmouseenter="playHoverSound()" class="aaa-menu-btn classic-grid-choice" aria-pressed="false">
+                        <span class="classic-grid-choice-icon" aria-hidden="true"><i class="fa-solid fa-skull"></i></span>
+                        <span class="classic-grid-choice-name">Expert</span><span class="classic-grid-choice-details">30×16 · 99 mines</span>
+                    </button>
+                </div>
+                <button id="classicCustomGridButton" type="button" onclick="openModal('customModal')" onmouseenter="playHoverSound()" class="aaa-menu-btn classic-grid-custom-choice">
+                    <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+                    <span><strong>Grille personnalisée</strong><small>Choisis la taille et le nombre de mines</small></span>
+                    <i class="fa-solid fa-chevron-right classic-grid-custom-arrow" aria-hidden="true"></i>
+                </button>
+            </section>
+
+            <!-- Board Wrapper with FX Canvas Overlay -->
+            <div id="boardWrapper" class="cyber-panel p-3 rounded-2xl shadow-2xl overflow-hidden max-w-full flex items-center justify-center relative">
+                <canvas id="fxCanvas" class="absolute inset-0 pointer-events-none z-20"></canvas>
+                <div id="gameBoard" role="group" aria-label="Grille du démineur"></div>
+            </div>
+            <p id="logicGenerationStatus" class="hidden mt-2 text-xs text-emerald-300 flex items-center gap-2" role="status" aria-live="polite"><i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i><span>Recherche d’une grille sans devinette…</span></p>
+        </div>
+
+        <!-- Page de personnalisation -->
+        <div id="screenAppearance" class="hidden">
+            <header class="appearance-page-header">
+                <div>
+                    <p class="eyebrow">Apparence</p>
+                    <h2>Personnalise ton thème</h2>
+                </div>
+                <button id="appearanceBackButton" type="button" class="appearance-back" onclick="closeAppearanceSettings()">
+                    <i class="fa-solid fa-arrow-left" aria-hidden="true"></i><span>Retour au jeu</span>
+                </button>
+            </header>
+
+            <section class="appearance-settings cyber-panel" aria-label="Réglages des couleurs">
+                <div class="theme-tabs" role="group" aria-label="Catégories de couleurs">
+                    <button type="button" class="theme-tab is-active" data-theme-category="background" aria-pressed="true">Fond</button>
+                    <button type="button" class="theme-tab" data-theme-category="blocks" aria-pressed="false">Blocs</button>
+                    <button type="button" class="theme-tab" data-theme-category="grid" aria-pressed="false">Grille</button>
+                </div>
+                <div id="shopThemeList" class="theme-options" role="group" aria-label="Choix de couleur"></div>
+            </section>
+
+            <aside class="appearance-preview cyber-panel" aria-labelledby="appearancePreviewTitle">
+                <div class="appearance-preview-heading">
+                    <div>
+                        <p class="eyebrow">Aperçu en direct</p>
+                        <h3 id="appearancePreviewTitle">Une partie en cours</h3>
+                    </div>
+                </div>
+                <div class="preview-window">
+                    <div class="preview-window-header">
+                        <span class="preview-logo-mark"><i class="fa-solid fa-bomb" aria-hidden="true"></i></span>
+                        <span class="preview-brand">BAIELY MINES<small>MODE CLASSIQUE</small></span>
+                        <span class="preview-timer"><i class="fa-solid fa-stopwatch" aria-hidden="true"></i> 00:42</span>
+                    </div>
+                    <div class="preview-hud">
+                        <span><i class="fa-solid fa-bomb" aria-hidden="true"></i> 10</span>
+                        <span><i class="fa-solid fa-flag" aria-hidden="true"></i> 03</span>
+                    </div>
+                    <div class="preview-board" role="img" aria-label="Exemple de cases ouvertes et fermées du démineur">
+                        <span class="preview-tile"></span><span class="preview-tile"></span><span class="preview-tile is-open is-one">1</span><span class="preview-tile"></span><span class="preview-tile"></span>
+                        <span class="preview-tile"></span><span class="preview-tile is-open is-one">1</span><span class="preview-tile is-open is-two">2</span><span class="preview-tile is-open is-one">1</span><span class="preview-tile"></span>
+                        <span class="preview-tile"></span><span class="preview-tile is-open">0</span><span class="preview-tile is-one is-open">1</span><span class="preview-tile is-one is-open">1</span><span class="preview-tile"></span>
+                        <span class="preview-tile"></span><span class="preview-tile"></span><span class="preview-tile"></span><span class="preview-tile is-flag"><i class="fa-solid fa-flag" aria-hidden="true"></i></span><span class="preview-tile"></span>
+                    </div>
+                    <div class="preview-actions">
+                        <span class="preview-primary-button">Continuer</span>
+                        <span class="preview-secondary-button"><i class="fa-solid fa-house" aria-hidden="true"></i> Menu</span>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <!-- Page de statistiques -->
+        <div id="screenStats" class="hidden" aria-labelledby="statsPageTitle">
+            <header class="appearance-page-header">
+                <div>
+                    <h2 id="statsPageTitle">Tes statistiques</h2>
+                </div>
+                <button id="statsBackButton" type="button" class="appearance-back" onclick="closeStatsPage()">
+                    <i class="fa-solid fa-arrow-left" aria-hidden="true"></i><span>Retour au menu</span>
+                </button>
+            </header>
+
+            <section class="stats-overview cyber-panel" aria-label="Bilan des parties">
+                <div class="stats-overview-copy">
+                    <p class="eyebrow">Bilan général</p>
+                    <h3>Victoires et défaites</h3>
+                </div>
+                <div class="stats-donut-wrap">
+                    <div id="statsOutcomeChart" class="stats-donut" role="img" aria-label="Aucune partie terminée">
+                        <svg class="stats-donut-chart" viewBox="0 0 116 116" aria-hidden="true" focusable="false">
+                            <circle class="stats-donut-track" cx="58" cy="58" r="52" pathLength="100"></circle>
+                            <circle class="stats-donut-wins" cx="58" cy="58" r="52" pathLength="100" transform="rotate(-90 58 58)"></circle>
+                        </svg>
+                        <span id="statsWinPercentage">0%</span>
+                        <small>victoires</small>
+                    </div>
+                    <div class="stats-outcome-legend" aria-live="polite">
+                        <div><span class="stats-legend-label">Parties</span><strong id="statsGamesLegend">0</strong></div>
+                        <div><span class="stats-legend-label"><i class="stats-legend-dot is-win" aria-hidden="true"></i>Victoires</span><strong id="statsWinLegend">0</strong></div>
+                        <div><span class="stats-legend-label"><i class="stats-legend-dot is-loss" aria-hidden="true"></i>Défaites</span><strong id="statsLossLegend">0</strong></div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="stats-detail-grid">
+                <section class="stats-panel cyber-panel" aria-labelledby="statsExplorationTitle">
+                    <div class="stats-panel-heading"><div><h3 id="statsExplorationTitle">Exploration</h3></div><i class="fa-solid fa-table-cells-large" aria-hidden="true"></i></div>
+                    <div class="stats-exploration-number"><strong id="statsCellsRevealed">0</strong><span>cases révélées</span></div>
+                </section>
+
+                <section class="stats-panel cyber-panel" aria-labelledby="statsModesTitle">
+                    <div class="stats-panel-heading"><div><h3 id="statsModesTitle">Par mode de jeu</h3></div><i class="fa-solid fa-chart-bar" aria-hidden="true"></i></div>
+                    <div id="statsModeBreakdown" class="stats-mode-list" aria-live="polite"></div>
+                </section>
+
+                <section class="stats-panel cyber-panel" aria-labelledby="statsRecordsTitle">
+                    <div class="stats-panel-heading"><div><h3 id="statsRecordsTitle">Records personnels</h3></div><i class="fa-solid fa-stopwatch" aria-hidden="true"></i></div>
+                    <div id="statsRecords" class="stats-record-list">Aucune victoire enregistrée.</div>
+                </section>
+
+                <section class="stats-panel cyber-panel" aria-labelledby="statsRankTitle">
+                    <div class="stats-panel-heading"><div><h3 id="statsRankTitle">Niveau de classement</h3></div><i class="fa-solid fa-ranking-star" aria-hidden="true"></i></div>
+                    <div class="stats-rank-label"><span>Rang actuel</span><strong id="statsCurrentRank">Bronze III</strong></div>
+                    <div class="stats-progress-track stats-rank-track"><span id="statsRankBar"></span></div>
+                    <p id="statsRankNext" class="stats-rank-next"></p>
+                    <div class="stats-time-summary"><div><span>Meilleur temps</span><strong id="statsBestTimeDetail">--</strong></div><div><span>Temps moyen</span><strong id="statsAverageTime">--</strong></div></div>
+                </section>
+            </div>
+        </div>
+
+        <!-- Page de paramètres -->
+        <div id="screenSettings" class="hidden" aria-labelledby="settingsPageTitle">
+            <header class="appearance-page-header">
+                <div>
+                    <p class="eyebrow">Préférences</p>
+                    <h2 id="settingsPageTitle">Paramètres</h2>
+                </div>
+                <button id="settingsBackButton" type="button" class="appearance-back" onclick="closeSettingsPage()">
+                    <i class="fa-solid fa-arrow-left" aria-hidden="true"></i><span>Retour au menu</span>
+                </button>
+            </header>
+
+            <div class="settings-page-content">
+                <section class="settings-section cyber-panel" aria-labelledby="settingsSoundTitle">
+                    <div class="settings-section-header">
+                        <h4 id="settingsSoundTitle">Son</h4>
+                        <div class="settings-sound-actions">
+                            <button id="audioSettingToggle" type="button" class="settings-sound-toggle" onclick="toggleAudio()" aria-pressed="true">
+                                <i id="audioSettingIcon" class="fa-solid fa-volume-high" aria-hidden="true"></i>
+                                <span id="audioSettingState">Activé</span>
+                            </button>
+                            <button type="button" class="settings-preview-button" onclick="previewAudio()">
+                                <i class="fa-solid fa-play" aria-hidden="true"></i><span>Tester le son</span>
+                            </button>
+                        </div>
+                    </div>
+                    <label class="settings-volume-label" for="audioVolume">
+                        <span>Volume des effets</span><output id="audioVolumeValue" for="audioVolume">55%</output>
+                    </label>
+                    <input id="audioVolume" class="settings-volume-range" type="range" min="0" max="100" step="1" value="55" oninput="setAudioVolume(this.value)">
+                    <p id="audioPreviewStatus" class="settings-preview-status" role="status" aria-live="polite"></p>
+                </section>
+
+                <section class="settings-section cyber-panel" aria-labelledby="settingsControlsTitle">
+                    <h4 id="settingsControlsTitle">Commandes</h4>
+                    <div class="settings-input-visuals">
+                    <div class="settings-keyboard-wrap">
+                        <div class="settings-keyboard-heading">
+                            <span>Clavier visuel</span>
+                        </div>
+                        <div id="settingsVirtualKeyboard" class="settings-keyboard" role="img" aria-label="Clavier visuel des raccourcis">
+                            <div class="settings-keyboard-row">
+                                <span class="settings-virtual-key settings-virtual-key--symbols" data-control-code="Backquote" data-control-key="²">²</span>
+                                <span class="settings-virtual-key settings-virtual-key--symbols" data-control-code="Digit1" data-control-key="&amp;" data-shifted-key="1"><small>1</small><strong>&amp;</strong></span>
+                                <span class="settings-virtual-key settings-virtual-key--symbols" data-control-code="Digit2" data-control-key="é" data-shifted-key="2"><small>2</small><strong>é</strong></span>
+                                <span class="settings-virtual-key settings-virtual-key--symbols" data-control-code="Digit3" data-control-key="&quot;" data-shifted-key="3"><small>3</small><strong>&quot;</strong></span>
+                                <span class="settings-virtual-key settings-virtual-key--symbols" data-control-code="Digit4" data-control-key="'" data-shifted-key="4"><small>4</small><strong>'</strong></span>
+                                <span class="settings-virtual-key settings-virtual-key--symbols" data-control-code="Digit5" data-control-key="(" data-shifted-key="5"><small>5</small><strong>(</strong></span>
+                                <span class="settings-virtual-key settings-virtual-key--symbols" data-control-code="Digit6" data-control-key="-" data-shifted-key="6"><small>6</small><strong>-</strong></span>
+                                <span class="settings-virtual-key settings-virtual-key--symbols" data-control-code="Digit7" data-control-key="è" data-shifted-key="7"><small>7</small><strong>è</strong></span>
+                                <span class="settings-virtual-key settings-virtual-key--symbols" data-control-code="Digit8" data-control-key="_" data-shifted-key="8"><small>8</small><strong>_</strong></span>
+                                <span class="settings-virtual-key settings-virtual-key--symbols" data-control-code="Digit9" data-control-key="ç" data-shifted-key="9"><small>9</small><strong>ç</strong></span>
+                                <span class="settings-virtual-key settings-virtual-key--symbols" data-control-code="Digit0" data-control-key="à" data-shifted-key="0"><small>0</small><strong>à</strong></span>
+                                <span class="settings-virtual-key settings-virtual-key--symbols" data-control-code="Minus" data-control-key=")" data-shifted-key="°"><small>°</small><strong>)</strong></span>
+                                <span class="settings-virtual-key settings-virtual-key--symbols" data-control-code="Equal" data-control-key="=" data-shifted-key="+"><small>+</small><strong>=</strong></span>
+                            </div>
+                            <div class="settings-keyboard-row">
+                                <span class="settings-virtual-key" data-control-code="KeyQ" data-control-key="a">A</span>
+                                <span class="settings-virtual-key" data-control-code="KeyW" data-control-key="z">Z</span>
+                                <span class="settings-virtual-key" data-control-code="KeyE" data-control-key="e">E</span>
+                                <span class="settings-virtual-key" data-control-code="KeyR" data-control-key="r">R</span>
+                                <span class="settings-virtual-key" data-control-code="KeyT" data-control-key="t">T</span>
+                                <span class="settings-virtual-key" data-control-code="KeyY" data-control-key="y">Y</span>
+                                <span class="settings-virtual-key" data-control-code="KeyU" data-control-key="u">U</span>
+                                <span class="settings-virtual-key" data-control-code="KeyI" data-control-key="i">I</span>
+                                <span class="settings-virtual-key" data-control-code="KeyO" data-control-key="o">O</span>
+                                <span class="settings-virtual-key" data-control-code="KeyP" data-control-key="p">P</span>
+                                <span class="settings-virtual-key" data-control-code="BracketLeft" data-control-key="^">^</span>
+                                <span class="settings-virtual-key" data-control-code="BracketRight" data-control-key="$">$</span>
+                            </div>
+                            <div class="settings-keyboard-row">
+                                <span class="settings-virtual-key" data-control-code="KeyA" data-control-key="q">Q</span>
+                                <span class="settings-virtual-key" data-control-code="KeyS" data-control-key="s">S</span>
+                                <span class="settings-virtual-key" data-control-code="KeyD" data-control-key="d">D</span>
+                                <span class="settings-virtual-key" data-control-code="KeyF" data-control-key="f">F</span>
+                                <span class="settings-virtual-key" data-control-code="KeyG" data-control-key="g">G</span>
+                                <span class="settings-virtual-key" data-control-code="KeyH" data-control-key="h">H</span>
+                                <span class="settings-virtual-key" data-control-code="KeyJ" data-control-key="j">J</span>
+                                <span class="settings-virtual-key" data-control-code="KeyK" data-control-key="k">K</span>
+                                <span class="settings-virtual-key" data-control-code="KeyL" data-control-key="l">L</span>
+                                <span class="settings-virtual-key" data-control-code="Semicolon" data-control-key="m">M</span>
+                                <span class="settings-virtual-key" data-control-code="Quote" data-control-key="ù">ù</span>
+                                <span class="settings-virtual-key" data-control-code="Backslash" data-control-key="*">*</span>
+                                <span class="settings-virtual-key settings-virtual-key--wide" data-control-code="Enter" data-control-key="Enter">Entrée</span>
+                            </div>
+                            <div class="settings-keyboard-row">
+                                <span class="settings-virtual-key" data-control-code="IntlBackslash" data-control-key="&lt;">&lt;</span>
+                                <span class="settings-virtual-key" data-control-code="KeyZ" data-control-key="w">W</span>
+                                <span class="settings-virtual-key" data-control-code="KeyX" data-control-key="x">X</span>
+                                <span class="settings-virtual-key" data-control-code="KeyC" data-control-key="c">C</span>
+                                <span class="settings-virtual-key" data-control-code="KeyV" data-control-key="v">V</span>
+                                <span class="settings-virtual-key" data-control-code="KeyB" data-control-key="b">B</span>
+                                <span class="settings-virtual-key" data-control-code="KeyN" data-control-key="n">N</span>
+                                <span class="settings-virtual-key" data-control-code="KeyM" data-control-key=",">,</span>
+                                <span class="settings-virtual-key" data-control-code="Comma" data-control-key=";">;</span>
+                                <span class="settings-virtual-key" data-control-code="Period" data-control-key=":">:</span>
+                                <span class="settings-virtual-key settings-virtual-key--wide" data-control-code="Slash" data-control-key="!">!</span>
+                            </div>
+                            <div class="settings-keyboard-row">
+                                <span class="settings-virtual-key settings-virtual-key--wide" data-control-code="ShiftLeft">Maj</span>
+                                <span class="settings-virtual-key settings-virtual-key--space" data-control-code="Space" data-control-key="Space">Espace</span>
+                                <span class="settings-virtual-key settings-virtual-key--wide" data-control-code="ShiftRight">Maj</span>
+                            </div>
+                            <div id="settingsKeyboardExtraKeys" class="settings-keyboard-row settings-keyboard-extra" hidden></div>
+                        </div>
+                        <div class="settings-keyboard-legend" aria-hidden="true">
+                            <span><i class="settings-keyboard-dot is-reveal"></i>Révéler</span>
+                            <span><i class="settings-keyboard-dot is-flag"></i>Drapeau</span>
+                            <span><i class="settings-keyboard-dot is-restart"></i>Recommencer</span>
+                        </div>
+                    </div>
+                    <div class="settings-mouse-wrap">
+                        <div class="settings-keyboard-heading">
+                            <span>Souris</span>
+                        </div>
+                        <div id="settingsVirtualMouse" class="settings-mouse-visual" role="img" aria-label="Souris : clic gauche pour révéler une case, clic droit pour poser un drapeau, clic molette pour recommencer la grille.">
+                            <div class="settings-mouse-shell" aria-hidden="true">
+                                <span class="settings-mouse-side settings-mouse-left" data-mouse-button="0">
+                                    <small>Clic</small><strong>Gauche</strong>
+                                </span>
+                                <span class="settings-mouse-side settings-mouse-right" data-mouse-button="2">
+                                    <small>Clic</small><strong>Droit</strong>
+                                </span>
+                                <span class="settings-mouse-divider"></span>
+                                <span class="settings-mouse-wheel" data-mouse-button="1">
+                                    <i class="fa-solid fa-grip-lines-vertical" aria-hidden="true"></i>
+                                </span>
+                                <small class="settings-mouse-wheel-label">Molette</small>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+                    <div class="settings-key-list">
+                        <div class="settings-key-row">
+                            <span>Révéler une case</span>
+                            <div class="settings-bind-pair">
+                                <button id="bindRevealButton" type="button" class="settings-bind-button" onclick="startKeyCapture('reveal')">Entrée / Espace</button>
+                                <button id="bindMouseRevealButton" type="button" class="settings-bind-button settings-mouse-bind-button" onclick="startMouseCapture('reveal')">Clic gauche</button>
+                            </div>
+                        </div>
+                        <div class="settings-key-row">
+                            <span>Poser ou retirer un drapeau</span>
+                            <div class="settings-bind-pair">
+                                <button id="bindFlagButton" type="button" class="settings-bind-button" onclick="startKeyCapture('flag')">F</button>
+                                <button id="bindMouseFlagButton" type="button" class="settings-bind-button settings-mouse-bind-button" onclick="startMouseCapture('flag')">Clic droit</button>
+                            </div>
+                        </div>
+                        <div class="settings-key-row">
+                            <span>Recommencer la grille</span>
+                            <div class="settings-bind-pair">
+                                <button id="bindRestartButton" type="button" class="settings-bind-button" onclick="startKeyCapture('restart')">R</button>
+                                <button id="bindMouseRestartButton" type="button" class="settings-bind-button settings-mouse-bind-button" onclick="startMouseCapture('restart')">Clic molette</button>
+                            </div>
+                        </div>
+                        <div class="settings-reset-row">
+                            <button type="button" class="settings-bind-button settings-reset-button" onclick="resetUserSettings()">Rétablir les valeurs par défaut</button>
+                        </div>
+                    </div>
+                    <p id="settingsKeyStatus" class="settings-key-status" role="status" aria-live="polite"></p>
+                    <p id="settingsMouseStatus" class="settings-key-status" role="status" aria-live="polite"></p>
+                </section>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- MODAL: CUSTOM GAME -->
+    <div id="customModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md hidden p-4">
+        <div class="cyber-panel w-full max-w-md p-6 rounded-2xl shadow-2xl relative animate-pop-in" role="dialog" aria-modal="true" aria-labelledby="customModalTitle" tabindex="-1">
+            <button type="button" onclick="closeModal('customModal')" class="absolute top-4 right-4 text-slate-400 hover:text-white" aria-label="Fermer"><i class="fa-solid fa-xmark text-xl" aria-hidden="true"></i></button>
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-lg">
+                    <i class="fa-solid fa-sliders"></i>
+                </div>
+                <div>
+                    <h3 id="customModalTitle" class="font-orbitron font-bold text-lg text-white uppercase">Grille Sur Mesure</h3>
+                    <p class="text-xs text-slate-400">Choisis la taille de ta grille et le nombre de mines.</p>
+                </div>
+            </div>
+
+            <form id="customForm" class="space-y-4">
+                <div>
+                    <label for="customCols" class="text-xs font-bold text-slate-300 flex justify-between mb-1">
+                        <span>Colonnes :</span>
+                        <span id="customColsVal" class="text-cyan-400 font-orbitron">12</span>
+                    </label>
+                    <input type="range" id="customCols" min="8" max="28" value="12" class="w-full accent-cyan-400" oninput="document.getElementById('customColsVal').textContent = this.value; updateCustomMineLimit()">
+                </div>
+                <div>
+                    <label for="customRows" class="text-xs font-bold text-slate-300 flex justify-between mb-1">
+                        <span>Lignes :</span>
+                        <span id="customRowsVal" class="text-cyan-400 font-orbitron">10</span>
+                    </label>
+                    <input type="range" id="customRows" min="8" max="18" value="10" class="w-full accent-cyan-400" oninput="document.getElementById('customRowsVal').textContent = this.value; updateCustomMineLimit()">
+                </div>
+                <div>
+                    <label for="customMines" class="text-xs font-bold text-slate-300 flex justify-between mb-1">
+                        <span>Mines :</span>
+                        <span id="customMinesVal" class="text-rose-400 font-orbitron">15</span>
+                    </label>
+                    <input type="range" id="customMines" min="5" max="90" value="15" class="w-full accent-rose-500" oninput="document.getElementById('customMinesVal').textContent = this.value">
+                </div>
+
+                <button type="submit" class="w-full py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 font-orbitron font-black text-slate-950 text-xs tracking-wider uppercase transition mt-4 shadow-lg shadow-emerald-500/20">Lancer la partie</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: FIRST GAME GUIDE -->
+    <div id="helpModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md hidden p-4">
+        <section class="cyber-panel w-full max-w-lg p-6 sm:p-7 rounded-2xl relative animate-pop-in" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle">
+            <button type="button" onclick="closeModal('helpModal')" class="absolute top-4 right-4 text-slate-400 hover:text-white" aria-label="Fermer"><i class="fa-solid fa-xmark text-xl" aria-hidden="true"></i></button>
+            <p class="text-[10px] text-cyan-400 uppercase tracking-[.2em] font-bold mb-2">Guide rapide</p>
+            <h3 id="helpModalTitle" class="font-orbitron font-black text-2xl text-white mb-5">COMMENT JOUER</h3>
+            <div class="space-y-3 text-sm text-slate-300">
+                <p><i class="fa-solid fa-hand-pointer w-5 text-center text-cyan-400 mr-2"></i>Ouvre les cases pour révéler les chiffres ; chacun indique les mines voisines.</p>
+                <p id="mouseHelpText"><i class="fa-solid fa-computer-mouse w-5 text-center text-cyan-400 mr-2" aria-hidden="true"></i>Souris : clic gauche pour révéler, clic droit pour poser un drapeau, clic molette pour recommencer. Sur mobile, maintiens une case pour poser un drapeau.</p>
+                <p id="keyboardHelpText"><i class="fa-solid fa-keyboard w-5 text-center text-cyan-400 mr-2" aria-hidden="true"></i>Au clavier : flèches pour bouger, Entrée/Espace pour ouvrir, F pour poser un drapeau, R pour recommencer.</p>
+                <p><i class="fa-solid fa-trophy w-5 text-center text-cyan-400 mr-2"></i>Gagne en ouvrant toutes les cases sans mine. En classé, résous avant le chrono pour monter ; une défaite ne fait pas perdre de rang.</p>
+            </div>
+            <button type="button" onclick="closeModal('helpModal')" class="w-full mt-6 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-orbitron font-black text-xs uppercase">C’est parti</button>
+        </section>
+    </div>
+
+    <!-- MODAL: ACCOUNT LOGOUT -->
+    <div id="logoutModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md hidden p-4">
+        <section class="cyber-panel w-full max-w-md p-6 sm:p-7 rounded-2xl relative animate-pop-in" role="dialog" aria-modal="true" aria-labelledby="logoutModalTitle" aria-describedby="logoutModalDescription" tabindex="-1">
+            <button type="button" onclick="closeModal('logoutModal')" class="absolute top-4 right-4 text-slate-400 hover:text-white" aria-label="Fermer"><i class="fa-solid fa-xmark text-xl" aria-hidden="true"></i></button>
+            <div class="flex items-center gap-3 mb-5">
+                <div class="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 text-lg">
+                    <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i>
+                </div>
+                <div>
+                    <h3 id="logoutModalTitle" class="font-orbitron font-bold text-lg text-white">Se déconnecter ?</h3>
+                </div>
+            </div>
+            <p id="logoutModalDescription" class="text-sm text-slate-300 leading-relaxed">Le profil local et les données enregistrées sur cet appareil seront supprimés.</p>
+            <div class="flex flex-col-reverse sm:flex-row justify-end gap-2 mt-6">
+                <button type="button" onclick="closeModal('logoutModal')" class="px-4 py-3 rounded-xl border border-slate-700 bg-slate-900/80 text-slate-300 hover:text-white hover:border-cyan-400 transition font-bold text-xs">Annuler</button>
+                <button type="button" onclick="logoutAccount()" class="px-4 py-3 rounded-xl border border-rose-500/40 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 hover:border-rose-400 transition font-orbitron font-bold text-xs">Se déconnecter</button>
+            </div>
+        </section>
+    </div>
+
+    <!-- JAVASCRIPT GAME LOGIC -->
+    <script src="baiely_demineur.js"></script>
+</body>
+</html>
+
+
+
+
+
+
