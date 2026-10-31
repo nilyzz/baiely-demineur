@@ -4,34 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>BAIELY MINES — Démineur</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        neon: {
-                            cyan: '#00f3ff', purple: '#b000ff', gold: '#ffd700',
-                            rose: '#ff0055', matrix: '#00ff66', magma: '#ff4500'
-                        }
-                    },
-                    keyframes: {
-                        menuSlideIn: { '0%': { opacity: '0', transform: 'translateX(-30px) scale(0.98)' }, '100%': { opacity: '1', transform: 'translateX(0) scale(1)' } },
-                        popIn: { '0%': { opacity: '0', transform: 'scale(0.92) translateY(12px)' }, '100%': { opacity: '1', transform: 'scale(1) translateY(0)' } },
-                        pulseGlow: { '0%, 100%': { opacity: '0.4', filter: 'drop-shadow(0 0 15px rgba(0, 243, 255, 0.4))' }, '50%': { opacity: '0.9', filter: 'drop-shadow(0 0 25px rgba(0, 243, 255, 0.8))' } }
-                    },
-                    animation: { 'menu-slide': 'menuSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards', 'pop-in': 'popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards', 'pulse-glow': 'pulseGlow 3s infinite ease-in-out' }
-                }
-            }
-        }
-    </script>
-    <!-- Icons & AAA Fonts -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Styles Tailwind compilés avec sa configuration de production -->
+    <link rel="stylesheet" href="baiely_tailwind.css">
+    <!-- Icônes et polices hébergées avec le site -->
+    <link rel="stylesheet" href="assets/vendor/fontawesome/css/fontawesome.min.css">
+    <link rel="stylesheet" href="assets/vendor/fontawesome/css/solid.min.css">
+    <link rel="stylesheet" href="assets/fonts/fonts.css">
     <link rel="stylesheet" href="baiely_demineur.css">
 </head>
 <body class="app-body relative flex flex-col">
@@ -253,14 +231,14 @@
                 <div class="flex items-center gap-2">
                     <button id="logicalModeToggle" type="button" onclick="toggleLogicalMode()" onmouseenter="playHoverSound()" aria-pressed="false" class="w-10 h-10 rounded-xl bg-slate-900/80 border border-slate-700 flex items-center justify-center text-slate-300 hover:text-cyan-400 transition" title="Activer le mode logique" aria-label="Activer le mode logique"><i class="fa-solid fa-brain" aria-hidden="true"></i></button>
                     <button id="changeClassicGridButton" type="button" onclick="showClassicGridSelection()" onmouseenter="playHoverSound()" class="hidden" title="Changer de grille" aria-label="Changer de grille"><i class="fa-solid fa-table-cells-large" aria-hidden="true"></i></button>
-                    <button id="helpButton" type="button" onclick="openModal('helpModal')" class="w-10 h-10 rounded-xl bg-slate-900/80 border border-slate-700 flex items-center justify-center text-slate-300 hover:text-cyan-400 transition" title="Règles et commandes" aria-label="Règles et commandes">
-                        <i class="fa-solid fa-circle-question" aria-hidden="true"></i>
-                    </button>
                     <button id="flagModeBtn" type="button" onclick="toggleFlagMode()" onmouseenter="playHoverSound()" title="Activer le mode drapeau" aria-label="Activer le mode drapeau" aria-pressed="false" class="w-10 h-10 rounded-xl bg-slate-900/80 flex items-center justify-center border border-slate-700 transition">
                         <i class="fa-solid fa-flag text-slate-400"></i>
                     </button>
                     <button type="button" onclick="restartGame()" onmouseenter="playHoverSound()" class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/40 flex items-center justify-center text-cyan-400 hover:bg-cyan-500/20 transition" title="Recommencer" aria-label="Recommencer la partie">
                         <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+                    </button>
+                    <button id="helpButton" type="button" onclick="openModal('helpModal')" class="w-10 h-10 rounded-xl bg-slate-900/80 border border-slate-700 flex items-center justify-center text-slate-300 hover:text-cyan-400 transition" title="Règles et commandes" aria-label="Règles et commandes">
+                        <i class="fa-solid fa-circle-question" aria-hidden="true"></i>
                     </button>
                 </div>
                 <button id="lossRestartButton" type="button" onclick="restartGame()" class="loss-restart-button hidden">

@@ -1,0 +1,11 @@
+{
+  "name": "baiely-mines",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build:css": "tailwindcss --config ./tailwind.config.cjs --input ./tailwind.input.css --output ./baiely_tailwind.css --minify"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.17"
+  }
+}

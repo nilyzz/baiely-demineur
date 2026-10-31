@@ -407,6 +407,10 @@ main:has(#screenGame:not(.hidden):not(.screen-transition-exit)) { align-items: f
 #screenGame.grid-selection-active #boardWrapper,
 #screenGame.grid-selection-active #logicGenerationStatus { display: none !important; }
 #screenGame.grid-selection-active #gameHud > div:nth-child(2) { visibility: hidden; }
+#screenGame.grid-selection-active #gameHud > div:nth-child(3) {
+    grid-column: 3;
+    justify-self: end;
+}
 #screenGame.grid-selection-active #gameHud > div:nth-child(3) > button:not(#helpButton) {
     visibility: hidden;
     opacity: 0;
@@ -600,7 +604,12 @@ main:has(#screenGame:not(.hidden):not(.screen-transition-exit)) { align-items: f
     background: var(--surface);
     box-shadow: 0 24px 70px rgba(0, 0, 0, .28);
 }
-#boardWrapper.board-refreshing { animation: board-refresh-in .11s cubic-bezier(.2, .7, .3, 1) both; }
+#boardWrapper.board-refreshing { animation: board-refresh-shell-in .44s cubic-bezier(.2, .72, .24, 1) both; }
+#boardWrapper.board-refreshing .tile-hidden:not(.flag-pop) {
+    animation: board-refresh-tile-in .36s cubic-bezier(.2, .72, .24, 1) both;
+    animation-delay: var(--board-refresh-delay, 0ms);
+    transform-origin: center;
+}
 #fxCanvas { pointer-events: none; }
 #gameBoard {
     display: grid;
@@ -648,9 +657,13 @@ main:has(#screenGame:not(.hidden):not(.screen-transition-exit)) { align-items: f
     68% { opacity: 1; transform: scale(1.02); }
     100% { opacity: 1; transform: scale(1); }
 }
-@keyframes board-refresh-in {
-    from { opacity: .72; transform: scale(.99); }
-    to { opacity: 1; transform: scale(1); }
+@keyframes board-refresh-shell-in {
+    from { opacity: .55; transform: translateY(9px) scale(.985); filter: blur(3px); }
+    to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+@keyframes board-refresh-tile-in {
+    from { opacity: 0; transform: perspective(520px) rotateX(-48deg) translateY(5px) scale(.92); filter: brightness(1.65); }
+    to { opacity: 1; transform: perspective(520px) rotateX(0) translateY(0) scale(1); filter: brightness(1); }
 }
 @keyframes flag-drop { from { transform: translateY(-4px) scale(.75); } to { transform: translateY(0) scale(1); } }
 #logicGenerationStatus { min-height: 20px; color: var(--theme-accent) !important; font-size: 11px; }
@@ -1206,6 +1219,31 @@ html.theme-transitioning *::after {
 html.theme-transitioning #themeBackgroundTransition {
     transition: opacity .16s ease !important;
 }
+@media (min-width: 2200px) {
+    html { font-size: clamp(16px, calc(.4vw + 8.32px), 20px); }
+    body.app-body { padding: clamp(34px, 1.6vw, 52px); gap: clamp(40px, 2vw, 64px); }
+    #appHeader, main { width: min(100%, clamp(1240px, 56vw, 1680px)); }
+    #screenUsername:not(.hidden) { width: min(100%, clamp(470px, 22vw, 620px)); }
+    #screenMenu:not(.hidden) { width: min(100%, clamp(1080px, 48vw, 1440px)); gap: clamp(76px, 4vw, 120px); }
+    #screenMenu > div:first-child { max-width: clamp(470px, 22vw, 640px); gap: clamp(14px, .6vw, 20px); }
+    #menuModePair .aaa-menu-btn { gap: clamp(8px, .4vw, 12px); padding: clamp(12px, .55vw, 18px); }
+    #menuModePair .aaa-menu-btn h3 { font-size: clamp(12px, .42vw, 14px); }
+    #menuModePair .aaa-menu-btn p { font-size: clamp(11px, .38vw, 13px); }
+    #menuModePair .aaa-menu-btn > div:first-child > div:first-child { width: clamp(36px, 1.5vw, 46px); height: clamp(36px, 1.5vw, 46px); }
+    #screenAppearance:not(.hidden) { width: min(100%, clamp(1120px, 48vw, 1480px)); gap: clamp(28px, 2vw, 48px); }
+    #screenStats:not(.hidden) { width: min(100%, clamp(1080px, 45vw, 1400px)); }
+    #screenSettings:not(.hidden) { width: min(100%, clamp(920px, 40vw, 1240px)); }
+    #screenGame:not(.hidden) #gameHud { width: min(100%, clamp(1050px, 44vw, 1320px)); max-width: clamp(1050px, 44vw, 1320px); }
+    #gameHud > div:nth-child(2) > div { min-width: clamp(82px, 3.2vw, 98px); min-height: clamp(48px, 2.1vw, 62px); }
+    #gameHud button:not(#lossRestartButton) { min-width: 46px; min-height: 46px; }
+    #classicGridSelection { width: min(100%, clamp(780px, 36vw, 1080px)); max-width: clamp(780px, 36vw, 1080px); }
+    #boardWrapper { padding: clamp(15px, .7vw, 21px); }
+    .aaa-menu-btn h3 { font-size: clamp(12px, .42vw, 14px); }
+    .aaa-menu-btn p { font-size: clamp(11px, .38vw, 13px); }
+    .rank-transition-emblem { width: min(clamp(380px, 18vw, 520px), calc(100vw - 40px)); }
+    .rank-transition-logo { width: clamp(104px, 3.8vw, 132px); height: clamp(104px, 3.8vw, 132px); font-size: clamp(42px, 1.5vw, 52px); }
+}
+
 @media (max-width: 900px) {
     #screenMenu:not(.hidden) { grid-template-columns: minmax(0, 1fr); width: min(100%, 560px); gap: 18px; }
     #screenMenu > div:first-child { max-width: none; }
@@ -1341,6 +1379,10 @@ html.theme-transitioning #themeBackgroundTransition {
     html.theme-transitioning *::after { transition-duration: .01ms !important; }
     html.theme-transitioning #themeBackgroundTransition { transition-duration: .01ms !important; }
     .win-celebration { display: none; }
-    .rank-transition, .rank-transition-emblem { transition: none; }
-    .rank-transition-emblem--next.is-arriving .rank-transition-logo::after { animation-delay: 0s; }
+    .rank-transition { transition: opacity .2s ease, --rank-transition-accent .2s ease !important; }
+    .rank-transition-emblem { transition: transform .28s ease-out, opacity .28s ease-out !important; }
+    .rank-transition-emblem--next { transform: translate(calc(-50% + 28px), -50%); }
+    .rank-transition-emblem--current.is-leaving { transform: translate(calc(-50% - 28px), -50%); }
+    .rank-transition.is-arriving .rank-transition-emblem--next { transform: translate(-50%, -50%); }
+    .rank-transition-emblem--next .rank-transition-logo::after { display: none; }
 }

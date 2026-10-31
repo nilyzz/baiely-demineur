@@ -235,12 +235,13 @@
         let boardRows = 10;
         let mineCount = 15;
         let timeLimitSec = 240;
-        let dailyRandomState = 1;
+        let seededBoardRandomState = 1;
         let activeDailyDateKey = null;
 
         let board = [];
         let animateNextBoardRefresh = false;
         let nextBoardRefreshMotion = 'quick';
+        let boardRefreshAnimationTimer = null;
         let gameOver = false;
         let gameWon = false;
         let gameStarted = false;
@@ -640,7 +641,8 @@
                 document.getElementById('screenGame').classList.remove('hidden');
                 const choosingClassicGrid = currentMode === 'classic' && !classicGridChosen;
                 document.getElementById('screenGame').classList.toggle('grid-selection-active', choosingClassicGrid);
-                document.getElementById('changeClassicGridButton').classList.toggle('hidden', currentMode !== 'classic' || !classicGridChosen);
+                document.getElementById('changeClassicGridButton').classList.toggle('hidden',
+                    !(currentMode === 'classic' && classicGridChosen) && currentMode !== 'custom');
                 updateLogicalModeButton();
                 document.getElementById('playerBadge').classList.remove('hidden');
                 document.getElementById('logoutHeaderButton').classList.remove('hidden');
@@ -733,6 +735,10 @@
         }
 
         function showClassicGridSelection() {
+            if (currentMode === 'custom') {
+                openModal('customModal');
+                return;
+            }
             if (currentMode !== 'classic') return;
             boardGenerationId++;
             isGeneratingBoard = false;
@@ -881,7 +887,10 @@
             mineCount = rank.mines;
             timeLimitSec = rank.timeLimit;
             document.getElementById('gameModeTitle').textContent = `Classé · ${rank.name}`;
-            document.getElementById('gameRankInfo').textContent = `${rank.cols}×${rank.rows} · ${rank.mines} mines · ${rank.timeLimit}s max · défaite sans recul`;
+            const rankInfo = `${rank.cols}×${rank.rows} · ${rank.mines} mines · ${rank.timeLimit}s max · nouvelle grille à chaque partie · premier clic sûr · sans devinette · défaite sans recul`;
+            const rankInfoElement = document.getElementById('gameRankInfo');
+            rankInfoElement.dataset.matchInfo = rankInfo;
+            rankInfoElement.textContent = rankInfo;
             showGameScreen();
             initNewGame();
         }
@@ -922,6 +931,10 @@
             nextBoardRefreshMotion = 'quick';
             boardGenerationId++;
             isGeneratingBoard = false;
+            if (boardRefreshAnimationTimer !== null) clearTimeout(boardRefreshAnimationTimer);
+            boardRefreshAnimationTimer = null;
+            const boardWrapper = document.getElementById('boardWrapper');
+            boardWrapper.classList.remove('board-refreshing', 'board-grid-enter');
             stopTimer();
             gameTimerPaused = false;
             gameOver = false;
@@ -956,7 +969,6 @@
             adjustTileSize();
             renderBoard();
             if (shouldAnimateBoard) {
-                const boardWrapper = document.getElementById('boardWrapper');
                 const gameHud = document.getElementById('gameHud');
                 boardWrapper.classList.remove('board-refreshing', 'board-grid-enter');
                 const hudElements = [
@@ -970,7 +982,18 @@
                     boardWrapper.classList.add('board-grid-enter');
                     hudElements.forEach(element => element.classList.add('grid-view-enter'));
                 } else {
+                    const centerR = (boardRows - 1) / 2;
+                    const centerC = (boardCols - 1) / 2;
+                    for (let r = 0; r < boardRows; r++) for (let c = 0; c < boardCols; c++) {
+                        const tile = document.getElementById(`cell-${r}-${c}`);
+                        const wave = Math.abs(r - centerR) + Math.abs(c - centerC);
+                        tile?.style.setProperty('--board-refresh-delay', `${Math.round(Math.min(wave, 22) * 9)}ms`);
+                    }
                     boardWrapper.classList.add('board-refreshing');
+                    boardRefreshAnimationTimer = setTimeout(() => {
+                        boardWrapper.classList.remove('board-refreshing');
+                        boardRefreshAnimationTimer = null;
+                    }, 650);
                 }
             }
             if (!activeModalId) document.getElementById(rovingCellId)?.focus({ preventScroll: true });
@@ -1025,9 +1048,9 @@
             requestAnimationFrame(resizeFxCanvas);
         }
 
-        function nextDailyRandom() {
-            dailyRandomState = (dailyRandomState + 0x6D2B79F5) >>> 0;
-            let value = dailyRandomState;
+        function nextSeededBoardRandom() {
+            seededBoardRandomState = (seededBoardRandomState + 0x6D2B79F5) >>> 0;
+            let value = seededBoardRandomState;
             value = Math.imul(value ^ (value >>> 15), value | 1);
             value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
             return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
@@ -1051,11 +1074,15 @@
             document.getElementById('customMinesVal').textContent = mines.value;
         }
 
+        function seedBoardFromKey(seedKey) {
+            let seed = 2166136261;
+            for (let i = 0; i < seedKey.length; i++) seed = Math.imul(seed ^ seedKey.charCodeAt(i), 16777619);
+            seededBoardRandomState = seed >>> 0 || 1;
+        }
+
         function seedDailyBoard() {
             const dateKey = activeDailyDateKey || getDailyDateKey();
-            let seed = 2166136261;
-            for (let i = 0; i < dateKey.length; i++) seed = Math.imul(seed ^ dateKey.charCodeAt(i), 16777619);
-            dailyRandomState = seed >>> 0 || 1;
+            seedBoardFromKey(dateKey);
         }
 
         function isBoardLogicallySolvable(firstR, firstC) {
@@ -1131,12 +1158,13 @@
         }
 
         async function placeMines(firstR, firstC, generationId) {
-            const random = currentMode === 'daily' ? nextDailyRandom : Math.random;
-            const dailyCenter = { r: Math.floor(boardRows / 2), c: Math.floor(boardCols / 2) };
+            const random = currentMode === 'daily' ? nextSeededBoardRandom : Math.random;
+            const boardCenter = { r: Math.floor(boardRows / 2), c: Math.floor(boardCols / 2) };
             if (currentMode === 'daily') seedDailyBoard();
-            const safeR = currentMode === 'daily' ? dailyCenter.r : firstR;
-            const safeC = currentMode === 'daily' ? dailyCenter.c : firstC;
-            const useLogic = logicalModeEnabled && currentMode === 'classic';
+            const fixedCenterStart = currentMode === 'daily';
+            const safeR = fixedCenterStart ? boardCenter.r : firstR;
+            const safeC = fixedCenterStart ? boardCenter.c : firstC;
+            const useLogic = currentMode === 'ranked' || (logicalModeEnabled && currentMode === 'classic');
             let attempt = 0;
             while (generationId === boardGenerationId) {
                 attempt++;
@@ -1163,10 +1191,12 @@
                     }
                     board[r][c].count = minesNear;
                 }
-                if (!useLogic || isBoardLogicallySolvable(firstR, firstC)) return true;
+                const solverStartR = fixedCenterStart ? safeR : firstR;
+                const solverStartC = fixedCenterStart ? safeC : firstC;
+                if (!useLogic || isBoardLogicallySolvable(solverStartR, solverStartC)) return true;
                 if (attempt % 5 === 0) {
                     const status = document.getElementById('logicGenerationStatus');
-                    status.querySelector('span').textContent = `Recherche d’une grille sans devinette… (${attempt} essais)`;
+                    status.querySelector('span').textContent = `Préparation de la grille sans devinette… (${attempt} essais)`;
                 }
                 await new Promise(resolve => setTimeout(resolve, 0));
             }
@@ -1292,6 +1322,7 @@
 
         function initBoardInteractions() {
             const gb = document.getElementById('gameBoard');
+            const handledMouseButtons = new Set();
             const findCell = (event) => {
                 const target = event.target instanceof Element ? event.target.closest('.tile') : null;
                 return target && gb.contains(target) ? target : null;
@@ -1337,8 +1368,28 @@
                 if (cell) setRovingCell(cell);
             });
 
+            gb.addEventListener('pointerdown', (event) => {
+                if (event.pointerType !== 'mouse' && event.pointerType !== 'pen') return;
+                handledMouseButtons.delete(event.button);
+                const cell = findCell(event);
+                if (!cell) return;
+                const action = Object.keys(mouseBindings).find(name => mouseBindings[name] === event.button);
+                if (!action) return;
+
+                // Traiter l'action dès que le bouton est pressé, pendant que la case
+                // est encore la cible. Le click/auxclick/contextmenu de relâchement
+                // sera ignoré pour éviter de jouer l'action deux fois.
+                handledMouseButtons.add(event.button);
+                performMouseAction(event.button, event);
+            });
+
             gb.addEventListener('click', (event) => {
                 if (event.button !== 0) return;
+                const isTouchClick = event.pointerType === 'touch' || event.sourceCapabilities?.firesTouchEvents;
+                if (event.detail > 0 && !isTouchClick && handledMouseButtons.delete(event.button)) {
+                    event.preventDefault();
+                    return;
+                }
                 const cell = findCell(event);
                 if (!cell) return;
                 if (suppressedTouchCell === cell.id && performance.now() < suppressedTouchUntil) {
@@ -1346,12 +1397,14 @@
                     suppressedTouchCell = null;
                     return;
                 }
-                if (event.pointerType === 'touch' || event.sourceCapabilities?.firesTouchEvents) {
+                if (isTouchClick) {
                     const [r, c] = coordinates(cell);
                     handleCellClick(r, c);
                     return;
                 }
-                performMouseAction(event.button, event);
+                // Garder l'activation synthétique (technologies d'assistance) qui
+                // n'est précédée d'aucun pointerdown physique.
+                if (event.detail === 0) performMouseAction(event.button, event);
             });
 
             gb.addEventListener('mousedown', (event) => {
@@ -1362,15 +1415,17 @@
             gb.addEventListener('auxclick', (event) => {
                 if (!findCell(event)) return;
                 event.preventDefault();
-                if (event.button === 1) performMouseAction(event.button, event);
+                if (handledMouseButtons.delete(event.button)) return;
+                if (event.button === 1 && event.detail === 0) performMouseAction(event.button, event);
             });
 
             gb.addEventListener('contextmenu', (event) => {
+                // Le menu du navigateur ne doit pas apparaître dans les espaces entre les cases.
+                event.preventDefault();
                 const cell = findCell(event);
                 if (!cell) return;
-                event.preventDefault();
                 if (suppressedTouchCell === cell.id && performance.now() < suppressedTouchUntil) return;
-                performMouseAction(2, event);
+                if (!handledMouseButtons.delete(2)) performMouseAction(2, event);
             });
 
             gb.addEventListener('keydown', (event) => {
@@ -1462,11 +1517,17 @@
             }
 
             if (!gameStarted) {
+                if (currentMode === 'ranked') {
+                    const rankInfo = document.getElementById('gameRankInfo').dataset.matchInfo;
+                    if (rankInfo) document.getElementById('gameRankInfo').textContent = rankInfo;
+                }
                 isGeneratingBoard = true;
                 const generationId = ++boardGenerationId;
                 const status = document.getElementById('logicGenerationStatus');
-                if (logicalModeEnabled && currentMode === 'classic') {
-                    status.querySelector('span').textContent = 'Recherche d’une grille sans devinette…';
+                if (currentMode === 'ranked' || (logicalModeEnabled && currentMode === 'classic')) {
+                    status.querySelector('span').textContent = currentMode === 'ranked'
+                        ? 'Recherche d’une grille résoluble sans devinette…'
+                        : 'Recherche d’une grille sans devinette…';
                     status.classList.remove('hidden');
                 }
                 updateLogicalModeButton();
@@ -1774,9 +1835,12 @@
 
             if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
                 transition.style.setProperty('--rank-transition-accent', `rgb(${nextBadge.glow})`);
-                transition.classList.add('is-arriving');
-                nextEmblem.classList.add('is-arriving');
-                schedule(850, finish);
+                schedule(80, () => {
+                    currentEmblem.classList.add('is-leaving');
+                    transition.classList.add('is-arriving');
+                    nextEmblem.classList.add('is-arriving');
+                });
+                schedule(700, finish);
                 return;
             }
 
