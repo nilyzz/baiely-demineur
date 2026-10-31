@@ -1323,6 +1323,21 @@
         function initBoardInteractions() {
             const gb = document.getElementById('gameBoard');
             const handledMouseButtons = new Set();
+            const handledMouseButtonTimers = new Map();
+            const clearHandledMouseButton = button => {
+                const timer = handledMouseButtonTimers.get(button);
+                if (timer !== undefined) clearTimeout(timer);
+                handledMouseButtonTimers.delete(button);
+                handledMouseButtons.delete(button);
+            };
+            const markMouseButtonHandled = button => {
+                clearHandledMouseButton(button);
+                handledMouseButtons.add(button);
+                handledMouseButtonTimers.set(button, setTimeout(() => {
+                    handledMouseButtons.delete(button);
+                    handledMouseButtonTimers.delete(button);
+                }, 500));
+            };
             const findCell = (event) => {
                 const target = event.target instanceof Element ? event.target.closest('.tile') : null;
                 return target && gb.contains(target) ? target : null;
@@ -1370,7 +1385,7 @@
 
             gb.addEventListener('pointerdown', (event) => {
                 if (event.pointerType !== 'mouse' && event.pointerType !== 'pen') return;
-                handledMouseButtons.delete(event.button);
+                clearHandledMouseButton(event.button);
                 const cell = findCell(event);
                 if (!cell) return;
                 const action = Object.keys(mouseBindings).find(name => mouseBindings[name] === event.button);
@@ -1379,14 +1394,14 @@
                 // Traiter l'action dès que le bouton est pressé, pendant que la case
                 // est encore la cible. Le click/auxclick/contextmenu de relâchement
                 // sera ignoré pour éviter de jouer l'action deux fois.
-                handledMouseButtons.add(event.button);
+                markMouseButtonHandled(event.button);
                 performMouseAction(event.button, event);
             });
 
             gb.addEventListener('click', (event) => {
                 if (event.button !== 0) return;
                 const isTouchClick = event.pointerType === 'touch' || event.sourceCapabilities?.firesTouchEvents;
-                if (event.detail > 0 && !isTouchClick && handledMouseButtons.delete(event.button)) {
+                if (event.detail > 0 && !isTouchClick && handledMouseButtons.has(event.button)) {
                     event.preventDefault();
                     return;
                 }
@@ -1415,7 +1430,7 @@
             gb.addEventListener('auxclick', (event) => {
                 if (!findCell(event)) return;
                 event.preventDefault();
-                if (handledMouseButtons.delete(event.button)) return;
+                if (handledMouseButtons.has(event.button)) return;
                 if (event.button === 1 && event.detail === 0) performMouseAction(event.button, event);
             });
 
@@ -1425,7 +1440,7 @@
                 const cell = findCell(event);
                 if (!cell) return;
                 if (suppressedTouchCell === cell.id && performance.now() < suppressedTouchUntil) return;
-                if (!handledMouseButtons.delete(2)) performMouseAction(2, event);
+                if (!handledMouseButtons.has(2)) performMouseAction(2, event);
             });
 
             gb.addEventListener('keydown', (event) => {
