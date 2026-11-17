@@ -190,12 +190,13 @@
                 audioEnabled: typeof saved.audioEnabled === 'boolean' ? saved.audioEnabled : true,
                 volume: Number.isFinite(volume) ? Math.max(0, Math.min(1, volume)) : 0.55,
                 keyBindings,
-                mouseBindings
+                mouseBindings,
+                holdRevealEnabled: saved.holdRevealEnabled === true
             };
         }
 
         function saveUserSettings() {
-            writeStorage(STORAGE_KEYS.settings, JSON.stringify({ audioEnabled, volume: audioVolume, keyBindings, mouseBindings }));
+            writeStorage(STORAGE_KEYS.settings, JSON.stringify({ audioEnabled, volume: audioVolume, keyBindings, mouseBindings, holdRevealEnabled }));
             updateKeyboardHelp();
             updateMouseHelp();
         }
@@ -258,6 +259,10 @@
         let audioVolume = userSettings.volume;
         let keyBindings = userSettings.keyBindings;
         let mouseBindings = userSettings.mouseBindings;
+        let holdRevealEnabled = userSettings.holdRevealEnabled;
+        const heldRevealKeys = new Set();
+        let heldRevealPointerId = null;
+        let lastHoldRevealCellId = null;
         let activeKeyCapture = null;
         let activeMouseCapture = null;
         let suppressMouseCaptureFollowupButton = null;
@@ -280,6 +285,12 @@
         let longPressOrigin = null;
         let suppressedTouchCell = null;
         let suppressedTouchUntil = 0;
+
+        function clearHeldRevealInputs() {
+            heldRevealKeys.clear();
+            heldRevealPointerId = null;
+            lastHoldRevealCellId = null;
+        }
 
         function loadGameData() {
             const saved = readStorage(STORAGE_KEYS.game);
@@ -925,6 +936,7 @@
         }
 
         function initNewGame() {
+            clearHeldRevealInputs();
             const shouldAnimateBoard = animateNextBoardRefresh;
             const boardRefreshMotion = nextBoardRefreshMotion;
             animateNextBoardRefresh = false;
@@ -1343,6 +1355,19 @@
                 return target && gb.contains(target) ? target : null;
             };
             const coordinates = (cell) => [Number(cell.dataset.row), Number(cell.dataset.col)];
+            const revealHeldCell = (event) => {
+                if (!holdRevealEnabled || !gameStarted || gameOver || isGeneratingBoard || flagMode || activeModalId ||
+                    document.getElementById('screenGame').classList.contains('hidden') ||
+                    (event.pointerType && event.pointerType !== 'mouse' && event.pointerType !== 'pen') ||
+                    (heldRevealPointerId === null && heldRevealKeys.size === 0)) return;
+                const cell = findCell(event);
+                if (!cell || cell.id === lastHoldRevealCellId) return;
+                const [r, c] = coordinates(cell);
+                const data = board[r]?.[c];
+                if (!data || data.revealed || data.flagged) return;
+                lastHoldRevealCellId = cell.id;
+                handleCellClick(r, c);
+            };
             const performMouseAction = (button, event) => {
                 const action = Object.keys(mouseBindings).find(name => mouseBindings[name] === button);
                 if (!action) return;
@@ -1376,7 +1401,10 @@
                 if (event.pointerType !== 'mouse' && event.pointerType !== 'pen') return;
                 const cell = findCell(event);
                 if (cell) setRovingCell(cell, true);
+                revealHeldCell(event);
             });
+
+            gb.addEventListener('pointermove', revealHeldCell);
 
             gb.addEventListener('focusin', (event) => {
                 const cell = findCell(event);
@@ -1390,6 +1418,14 @@
                 if (!cell) return;
                 const action = Object.keys(mouseBindings).find(name => mouseBindings[name] === event.button);
                 if (!action) return;
+
+                const [r, c] = coordinates(cell);
+                const data = board[r]?.[c];
+                if (action === 'reveal' && holdRevealEnabled && gameStarted && !gameOver &&
+                    !isGeneratingBoard && !flagMode && data && !data.revealed && !data.flagged) {
+                    heldRevealPointerId = event.pointerId;
+                    lastHoldRevealCellId = cell.id;
+                }
 
                 // Traiter l'action dès que le bouton est pressé, pendant que la case
                 // est encore la cible. Le click/auxclick/contextmenu de relâchement
@@ -1471,6 +1507,29 @@
                 const next = document.getElementById(`cell-${Math.max(0, Math.min(boardRows - 1, r + dr))}-${Math.max(0, Math.min(boardCols - 1, c + dc))}`);
                 if (next) setRovingCell(next, true);
             });
+
+            document.addEventListener('pointerup', (event) => {
+                if (event.pointerId !== heldRevealPointerId) return;
+                heldRevealPointerId = null;
+                lastHoldRevealCellId = null;
+            });
+            document.addEventListener('pointercancel', (event) => {
+                if (event.pointerId !== heldRevealPointerId) return;
+                heldRevealPointerId = null;
+                lastHoldRevealCellId = null;
+            });
+            document.addEventListener('keydown', (event) => {
+                if (!holdRevealEnabled || !gameStarted || gameOver || isGeneratingBoard || activeModalId ||
+                    document.getElementById('screenGame').classList.contains('hidden') ||
+                    hasShortcutModifier(event) || !isControlBindingPressed('reveal', event)) return;
+                const target = event.target instanceof Element ? event.target : null;
+                if (target?.closest('input, textarea, select, [contenteditable="true"]')) return;
+                heldRevealKeys.add(event.code || controlKeyFromEvent(event));
+            });
+            document.addEventListener('keyup', (event) => {
+                heldRevealKeys.delete(event.code || controlKeyFromEvent(event));
+            });
+            window.addEventListener('blur', clearHeldRevealInputs);
 
             gb.addEventListener('pointerdown', (event) => {
                 if (event.pointerType !== 'touch' || event.button !== 0) return;
@@ -1718,6 +1777,7 @@
         }
 
         function endGame(won, titleMsg) {
+            clearHeldRevealInputs();
             gameOver = true;
             gameWon = won;
             stopTimer();
@@ -2367,7 +2427,8 @@
                 'Flèches : déplacer · ' + keyBindings.reveal.map(formatControlKey).join(' / ') +
                 ' : révéler · ' + keyBindings.flag.map(formatControlKey).join(' / ') +
                 ' : drapeau · ' + keyBindings.restart.map(formatControlKey).join(' / ') +
-                ' : recommencer.'
+                ' : recommencer.' +
+                (holdRevealEnabled ? ' Maintiens une commande de révélation et glisse sur la grille après le premier clic pour balayer les cases.' : '')
             ));
         }
 
@@ -2378,7 +2439,8 @@
             help.replaceChildren();
             if (icon) help.appendChild(icon);
             help.appendChild(document.createTextNode(
-                `Souris : ${formatMouseButton(mouseBindings.reveal)} pour révéler, ${formatMouseButton(mouseBindings.flag)} pour poser un drapeau, ${formatMouseButton(mouseBindings.restart)} pour recommencer. Sur mobile, maintiens une case pour poser un drapeau.`
+                `Souris : ${formatMouseButton(mouseBindings.reveal)} pour révéler, ${formatMouseButton(mouseBindings.flag)} pour poser un drapeau, ${formatMouseButton(mouseBindings.restart)} pour recommencer. Sur mobile, maintiens une case pour poser un drapeau.` +
+                (holdRevealEnabled ? ' Maintiens la commande de révélation et glisse sur la grille après le premier clic pour balayer les cases.' : '')
             ));
         }
 
@@ -2397,6 +2459,16 @@
             }
             const volumeValue = document.getElementById('audioVolumeValue');
             if (volumeValue) volumeValue.textContent = `${Math.round((audioEnabled ? audioVolume : 0) * 100)}%`;
+
+            const holdRevealToggle = document.getElementById('holdRevealToggle');
+            if (holdRevealToggle) {
+                holdRevealToggle.setAttribute('aria-pressed', String(holdRevealEnabled));
+                holdRevealToggle.setAttribute('aria-label', holdRevealEnabled
+                    ? 'Révélation en maintenant la commande'
+                    : 'Révélation par appui simple');
+                document.getElementById('holdRevealToggleState').textContent = holdRevealEnabled ? 'Maintenir' : 'Appuyer';
+                document.getElementById('holdRevealToggleIcon').className = 'fa-solid ' + (holdRevealEnabled ? 'fa-toggle-on' : 'fa-toggle-off');
+            }
 
             const bindingButtons = {
                 reveal: 'bindRevealButton',
@@ -2649,6 +2721,13 @@
             }
         }
 
+        function toggleHoldReveal() {
+            holdRevealEnabled = !holdRevealEnabled;
+            if (!holdRevealEnabled) clearHeldRevealInputs();
+            saveUserSettings();
+            updateSettingsUI();
+        }
+
         function toggleAudio() {
             audioEnabled = !audioEnabled;
             document.getElementById('audioPreviewStatus').textContent = '';
@@ -2820,6 +2899,8 @@
                 restart: [...DEFAULT_KEY_BINDINGS.restart]
             };
             mouseBindings = { ...DEFAULT_MOUSE_BINDINGS };
+            holdRevealEnabled = false;
+            clearHeldRevealInputs();
             saveUserSettings();
             updateSettingsUI();
             document.getElementById('settingsKeyStatus').textContent = 'Paramètres rétablis par défaut.';

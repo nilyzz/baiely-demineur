@@ -532,7 +532,13 @@
                     </div>
                     <div class="settings-key-list">
                         <div class="settings-key-row">
-                            <span>Révéler une case</span>
+                            <div class="settings-reveal-label">
+                                <span>Révéler une case</span>
+                                <button id="holdRevealToggle" type="button" class="settings-bind-button settings-hold-reveal-toggle" onclick="toggleHoldReveal()" aria-pressed="false" aria-label="Révéler par appui simple" title="Appui simple pour révéler, ou maintien de la commande Révéler pour glisser sur la grille après le clic de départ.">
+                                    <i id="holdRevealToggleIcon" class="fa-solid fa-toggle-off" aria-hidden="true"></i>
+                                    <span id="holdRevealToggleState">Appuyer</span>
+                                </button>
+                            </div>
                             <div class="settings-bind-pair">
                                 <button id="bindRevealButton" type="button" class="settings-bind-button" onclick="startKeyCapture('reveal')">Entrée / Espace</button>
                                 <button id="bindMouseRevealButton" type="button" class="settings-bind-button settings-mouse-bind-button" onclick="startMouseCapture('reveal')">Clic gauche</button>

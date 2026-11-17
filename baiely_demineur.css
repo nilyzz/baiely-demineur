@@ -34,9 +34,10 @@ html { min-width: 320px; background: var(--page-bg); }
 body.app-body {
     min-height: 100vh;
     min-height: 100svh;
+    min-height: 100dvh;
     margin: 0;
-    padding: clamp(16px, 3vw, 34px);
-    gap: clamp(22px, 4vh, 40px);
+    padding: clamp(14px, 2vh, 28px) clamp(14px, 3vw, 34px);
+    gap: clamp(14px, 2vh, 24px);
     overflow-x: hidden;
     color: var(--ink);
     background:
@@ -212,7 +213,9 @@ body.app-body input[type="range"] { accent-color: var(--theme-accent); }
 main {
     z-index: 1;
     width: min(100%, 1240px);
-    flex: 1 0 auto;
+    min-width: 0;
+    min-height: 0;
+    flex: 1 1 auto;
     margin: 0 auto;
     padding: 0;
 }
@@ -757,6 +760,8 @@ main:has(#screenGame:not(.hidden):not(.screen-transition-exit)) { align-items: f
 .settings-mouse-wheel.is-held.is-flag { box-shadow: 0 0 14px rgba(242, 173, 79, .58); }
 .settings-mouse-side.is-clicked, .settings-mouse-wheel.is-clicked { animation: settings-mouse-click .34s ease-out; }
 .settings-key-list { display: grid; gap: 8px; margin-top: 13px; }
+.settings-reveal-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.settings-hold-reveal-toggle[aria-pressed="true"] { border-color: rgba(var(--theme-accent-rgb), .55); color: var(--theme-accent); }
 .settings-key-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; color: var(--ink); font-size: 11px; }
 .settings-key-row.is-mouse-listening { border-radius: 11px; background: rgba(var(--theme-accent-rgb), .08); outline: 1px solid rgba(var(--theme-accent-rgb), .42); outline-offset: 5px; }
 .settings-key-row.is-mouse-listening > span { color: var(--theme-accent); }
@@ -896,7 +901,7 @@ main:has(#screenGame:not(.hidden):not(.screen-transition-exit)) { align-items: f
 }
 #screenSettings:not(.hidden) {
     display: grid;
-    width: min(100%, 920px);
+    width: min(100%, 1080px);
     gap: 14px;
     margin: auto;
     animation: surface-enter .32s ease both;
@@ -988,12 +993,17 @@ main:has(#screenGame:not(.hidden):not(.screen-transition-exit)) { align-items: f
 .stats-time-summary span { color: var(--muted); font-size: 9px; font-weight: 700; text-transform: uppercase; }
 .stats-time-summary strong { color: var(--ink); font-family: Orbitron, sans-serif; font-size: 13px; }
 @media (min-width: 721px) {
-    body.app-body.stats-active { padding: clamp(16px, 3vw, 34px) clamp(16px, 2vw, 26px); gap: clamp(22px, 4vh, 40px); }
-    body.app-body.settings-active { padding: clamp(16px, 3vw, 34px) clamp(16px, 2vw, 26px); gap: clamp(22px, 4vh, 40px); }
+    body.app-body.stats-active { padding: clamp(14px, 2vh, 28px) clamp(16px, 2vw, 26px); gap: clamp(14px, 2vh, 24px); }
+    body.app-body.settings-active { padding: clamp(14px, 2vh, 28px) clamp(16px, 2vw, 26px); gap: clamp(14px, 2vh, 24px); }
     #screenStats:not(.hidden) { gap: 8px; }
     #screenSettings:not(.hidden) { gap: 8px; }
     #screenStats .appearance-page-header h2 { font-size: clamp(1.55rem, 2.3vw, 1.9rem); }
     #screenSettings .appearance-page-header h2 { font-size: clamp(1.55rem, 2.3vw, 1.9rem); }
+    #screenSettings:not(.hidden) { width: min(100%, 1080px); }
+    .settings-page-content { grid-template-columns: minmax(190px, .65fr) minmax(0, 1.35fr); align-items: stretch; }
+    .settings-page-content > .settings-section:first-child .settings-section-header { align-items: flex-start; flex-direction: column; gap: 8px; }
+    .settings-page-content > .settings-section:first-child .settings-sound-actions { flex-wrap: wrap; }
+    .settings-page-content > .settings-section:first-child .settings-preview-status { text-align: left; }
     .settings-section { padding: 14px; }
     .stats-overview, .stats-panel { padding: 12px 15px; border-radius: 16px; }
     .stats-overview { gap: 16px; }
@@ -1253,7 +1263,7 @@ html.theme-transitioning #themeBackgroundTransition {
     #screenStats:not(.hidden) { width: min(100%, 760px); }
     #screenSettings:not(.hidden) { width: min(100%, 760px); }
 }
-@media (min-width: 721px) and (max-width: 900px) and (max-height: 760px) {
+@media (min-width: 721px) and (max-width: 900px) and (max-height: 900px) {
     #screenAppearance:not(.hidden) { grid-template-columns: minmax(0, 1.08fr) minmax(250px, .92fr); width: 100%; gap: 12px; }
     .appearance-page-header { grid-column: 1 / -1; }
     .appearance-settings, .appearance-preview { padding: 12px; }
@@ -1268,7 +1278,7 @@ html.theme-transitioning #themeBackgroundTransition {
     .preview-board .preview-tile:nth-child(n+16) { display: none; }
     .preview-tile { aspect-ratio: 1.2; }
 }
-@media (min-width: 901px) and (max-height: 760px) {
+@media (min-width: 901px) and (max-height: 900px) {
     #screenAppearance:not(.hidden) { gap: 12px; }
     .appearance-page-header h2 { font-size: 1.8rem; }
     .appearance-settings, .appearance-preview { padding: 14px; }
@@ -1370,6 +1380,122 @@ html.theme-transitioning #themeBackgroundTransition {
     .rank-transition-emblem--next.is-arriving .rank-transition-logo::after { inset: -5px; border-radius: 24px; }
     .rank-transition-emblem > strong { font-size: clamp(1.35rem, 5vw, 1.8rem); letter-spacing: .06em; }
     .rank-transition-tier { margin-top: 6px; font-size: 9px; }
+}
+@media (max-height: 900px) {
+    body.app-body,
+    body.app-body.stats-active,
+    body.app-body.settings-active {
+        padding-top: clamp(8px, 1.2vh, 12px);
+        padding-bottom: clamp(8px, 1.2vh, 12px);
+        gap: clamp(8px, 1.2vh, 12px);
+    }
+    #appHeader { padding-bottom: 8px; }
+    #screenUsername:not(.hidden) { padding: clamp(16px, 2.5vh, 24px); }
+    #screenMenu:not(.hidden) { gap: clamp(12px, 2vh, 24px); }
+    #gameHud { margin-bottom: 8px; padding: 8px 12px; }
+    #classicGridSelection { padding: clamp(12px, 2vh, 18px); }
+
+    #screenAppearance:not(.hidden) { gap: clamp(6px, 1vh, 10px); }
+    .appearance-settings, .appearance-preview { padding: clamp(8px, 1.2vh, 12px); }
+    .theme-tabs { gap: 4px; margin-bottom: 7px; padding: 4px; }
+    .theme-tab { min-height: 30px; padding: 6px; }
+    .appearance-settings .theme-option { gap: 4px 5px; padding: 6px; }
+    .appearance-settings .theme-option-swatch { width: 25px; height: 25px; }
+    .appearance-settings .theme-option-check { width: 17px; height: 17px; }
+    .preview-window { margin-top: 7px; padding: 7px; }
+    .preview-hud { margin: 6px 0; }
+    .preview-board { width: min(100%, 180px); }
+    .preview-actions { gap: 5px; margin-top: 6px; }
+    .preview-actions > span { min-height: 27px; }
+
+    #screenStats:not(.hidden), #screenSettings:not(.hidden) { gap: 6px; }
+    .stats-overview, .stats-panel { padding: 9px 11px; }
+    .stats-overview { gap: 10px; }
+    .stats-panel-heading { margin-bottom: 7px; }
+    .settings-section { padding: 10px; }
+    .settings-page-content { gap: 8px; }
+    .settings-volume-label { margin-top: 9px; }
+    .settings-volume-range { margin-top: 6px; }
+    .settings-input-visuals { gap: 9px; margin-top: 8px; }
+    .settings-keyboard-heading { margin-bottom: 6px; }
+    .settings-keyboard { gap: 2px; }
+    .settings-keyboard-row { gap: 2px; }
+    .settings-virtual-key { min-height: clamp(18px, 2.6vh, 23px); }
+    .settings-mouse-shell { width: clamp(82px, 11vh, 104px); height: clamp(96px, 13vh, 120px); }
+    .settings-mouse-side { height: 48%; padding-bottom: 7px; }
+    .settings-mouse-divider { bottom: 52%; }
+    .settings-mouse-wheel { top: 9%; width: 14px; height: 24px; }
+    .settings-mouse-wheel-label { top: 40%; }
+    .settings-key-list { gap: 5px; margin-top: 8px; }
+    .settings-key-row { gap: 6px; font-size: 10px; }
+    .settings-bind-button { min-height: 30px; padding-inline: 8px; font-size: 9px; }
+    .settings-reset-button { width: 220px; }
+}
+@media (max-width: 720px) and (max-height: 900px) {
+    #screenStats:not(.hidden) { width: 100%; }
+    .stats-overview { align-items: center; flex-direction: row; gap: 7px; padding: 8px; }
+    .stats-overview-copy { min-width: 0; flex: 1; }
+    .stats-overview-copy h3 { font-size: clamp(12px, 3.4vw, 16px); }
+    .stats-donut-wrap { width: auto; gap: 6px; }
+    .stats-donut { width: 58px; }
+    .stats-donut::before { inset: 6px; }
+    .stats-donut > span { font-size: 13px; }
+    .stats-donut > small { font-size: 6px; }
+    .stats-outcome-legend { min-width: 68px; gap: 3px; }
+    .stats-outcome-legend > div { gap: 4px; font-size: 7px; }
+    .stats-outcome-legend strong { font-size: 8px; }
+    .stats-legend-label { gap: 4px; }
+    .stats-legend-dot { width: 6px; height: 6px; }
+    .stats-detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .stats-panel { padding: 8px; }
+    .stats-panel-heading { gap: 5px; margin-bottom: 5px; }
+    .stats-panel-heading h3 { font-size: 11px; }
+    .stats-panel-heading > i { width: 22px; height: 22px; font-size: 9px; }
+    .stats-mode-list { gap: 5px; }
+    .stats-mode-row { grid-template-columns: minmax(0, 1fr) 32px; gap: 3px 6px; }
+    .stats-mode-meter { grid-column: 1 / -1; grid-row: 2; }
+    .stats-mode-rate { grid-column: 2; grid-row: 1; font-size: 8px; }
+    .stats-mode-copy strong { font-size: 8px; }
+    .stats-mode-copy span { font-size: 7px; }
+    .stats-record-row { gap: 5px; padding: 4px 0; font-size: 8px; }
+    .stats-record-row strong { font-size: 8px; }
+    .stats-rank-label { gap: 5px; margin-bottom: 5px; font-size: 8px; }
+    .stats-rank-label strong { font-size: 8px; }
+    .stats-rank-next { min-height: 0; margin: 5px 0; font-size: 7px; }
+    .stats-time-summary { gap: 4px; }
+    .stats-time-summary > div { gap: 2px; padding: 5px; }
+    .stats-time-summary span { font-size: 7px; }
+    .stats-time-summary strong { font-size: 10px; }
+
+    .settings-section { padding: 9px; }
+    .settings-section-header { gap: 6px; }
+    .settings-sound-actions { flex-wrap: wrap; gap: 5px; }
+    .settings-sound-toggle { padding: 6px 8px; }
+    .settings-preview-button { min-height: 30px; padding-inline: 8px; }
+    .settings-input-visuals { grid-template-columns: minmax(0, 1fr); }
+    .settings-mouse-shell { width: 86px; height: 100px; }
+    .settings-mouse-side { height: 46%; }
+    .settings-mouse-divider { bottom: 54%; }
+    .settings-mouse-wheel-label { top: 39%; font-size: 5px; }
+    .settings-key-row { gap: 4px; }
+    .settings-bind-pair { gap: 4px; }
+    .settings-bind-button { width: 112px; min-width: 0; font-size: 8px; }
+    .settings-reset-row { flex-wrap: wrap; gap: 5px; }
+    .settings-reset-button { width: 100%; }
+}
+@media (max-height: 620px) {
+    #screenAppearance:not(.hidden) { gap: 5px; }
+    .appearance-page-header h2 { font-size: 1.4rem; }
+    .appearance-back { min-height: 30px; padding-inline: 10px; }
+    .appearance-settings, .appearance-preview { padding: 7px; }
+    .preview-board { width: min(100%, 140px); }
+    .preview-tile { font-size: 9px; }
+    .stats-overview, .stats-panel { padding: 7px; }
+    .settings-section { padding: 7px; }
+    .settings-key-list { gap: 3px; margin-top: 5px; }
+    .settings-key-row { font-size: 9px; }
+    .settings-bind-button { min-height: 26px; }
+    .settings-mouse-shell { width: 76px; height: 88px; }
 }
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
